@@ -4,7 +4,7 @@ from tkinter import ttk
 
 def add_window():
     window = Tk()
-    window['bg'] = '#fafafa'
+    window['bg'] = '#393E46'
     window.title('text-to-speech')
     window.geometry('300x250')
     window.resizable(width=FALSE,height=FALSE)
@@ -34,7 +34,7 @@ def button_click():
         window1.destroy()
         new_window = add_window()
         
-        new_canvas=Canvas(new_window, height=300, width=250)
+        new_canvas=Canvas(new_window, height=300, width=250,bg='#393E46')
         new_canvas.pack
 
 
@@ -85,27 +85,27 @@ window1 = add_window()
 
 
 
-canvas = Canvas(window1, height=300, width=250)
+canvas = Canvas(window1, height=300, width=250,bg='#393E46',highlightcolor='#393E46')
 canvas.pack()
 
-frame = Frame(window1,bg='red')
+frame = Frame(window1,bg='#393E46')
 frame.place(relx=0.15, rely=0.15, relwidth=0.7,relheight=0.7)
 
 
 
 
 
-title = Label(frame, text='Enter your login',bg='grey',font=40)
+title = Label(frame, text='Enter your login',bg='#393E46',fg='#00ADB5',font=40)
 title.pack(pady=(30,5))
 
 loginInput = Entry(frame,bg = 'white')
 loginInput.pack()
 
-title = Label(frame, text='Enter your password',bg='grey',font=40)
+title = Label(frame, text='Enter your password',bg='#393E46',fg='#00ADB5',font=40)
 title.pack(pady=(10,5))
 
 passField = Entry(frame, bg='white', show='*')
-passField.pack(pady=(0,2))
+passField.pack(pady=(0,5))
 
 
 
