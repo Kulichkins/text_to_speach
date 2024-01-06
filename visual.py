@@ -1,6 +1,10 @@
 from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
+import psycopg2
+
+
+
 
 def add_window():
     window = Tk()
@@ -13,6 +17,36 @@ def add_window():
 def button_click():
     login = loginInput.get()
     passwd = passField.get()
+
+    try:
+        # connect to exist database
+        connection = psycopg2.connect(
+        host="127.0.0.1",
+        user="postgres",
+        password="123",
+        database="postgres"    
+        )
+        connection.autocommit = True
+    
+ 
+    
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO Users(login, password) VALUES (%s, %s); SELECT * FROM Users"
+            cursor.execute(sql, (login, passwd))
+        
+            print(f"Server version: {cursor.fetchone()}")
+        
+    
+    except Exception as _ex:
+        print("[INFO] Error while working with PostgreSQL", _ex)
+    finally:
+        if connection:
+         # cursor.close()
+            connection.close()
+            print("[INFO] PostgreSQL connection closed")
+
+
+
     if login != '' and passwd != '': 
         
         
