@@ -2,6 +2,12 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
 import psycopg2
+import numpy as np
+
+
+from transformers import BarkModel, AutoProcessor
+import torch
+import scipy
 
 
 
@@ -10,7 +16,7 @@ def add_window():
     window = Tk()
     window['bg'] = '#fafafa'
     window.title('text-to-speech')
-    window.geometry('300x250')
+    window.geometry('300x500')
     window.resizable(width=FALSE,height=FALSE)
     return(window)
 
@@ -63,8 +69,66 @@ def button_click():
         
         
         
-        def button_click_text_to_speech():
-            print('its ok')
+        def button_click_text_to_speech(temp_fk_id = login):
+            text_for_using = str(textField.get())
+            text_for_name = str(textField1.get())
+            fk_id = temp_fk_id
+            print(fk_id)
+            
+            model = BarkModel.from_pretrained('suno/bark')
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            model = model.to(device)
+            processor = AutoProcessor.from_pretrained('suno/bark')
+
+
+                
+
+            inputs = processor(text_for_using, voice_preset = 'v2/ru_speaker_3').to(device)
+            audio_array = model.generate(**inputs)
+            audio_array = audio_array.cpu().numpy().squeeze()
+
+
+            sample_rate = model.generation_config.sample_rate
+            scipy.io.wavfile.write(text_for_name,rate = sample_rate,data=audio_array)
+            
+            
+            
+            rate, audio_array = scipy.io.wavfile.read(text_for_name)
+
+            # Преобразование аудиофайла в тип bytea
+            audio_data = np.array(audio_array, dtype=np.int16).tobytes()
+
+
+            try:
+                # connect to exist database
+                connection = psycopg2.connect(
+                host="127.0.0.1",
+                user="postgres",
+                password="123",
+                database="postgres"    
+                )
+                connection.autocommit = True
+    
+ 
+    
+                with connection.cursor() as cursor:
+                    insert_query1 = "select id from Users where login = %s"
+                    cursor.execute(insert_query1, (fk_id,))
+                    output = cursor.fetchone()
+
+                    insert_query = "INSERT INTO files (file_name, preset, fk_user_id) VALUES (%s, %s, %s)"
+                    cursor.execute(insert_query, (text_for_name, audio_data, output[0]))
+
+                    output = cursor.fetchone()
+                    print(f" {output}")
+            except Exception as _ex:
+                print("[INFO] Error while working with PostgreSQL", _ex)
+            finally:
+                if connection:
+                # cursor.close()
+                    connection.close()
+                    print("[INFO] PostgreSQL connection closed")
+
         
         
         
@@ -93,7 +157,8 @@ def button_click():
 
         press_me_new = Button(new_frame, text = 'select', bg='grey',command=button_click_audio)
         press_me_new.pack(pady=5)
-        
+
+
 
 
         new_title = Label(new_frame, text='Enter your text',bg='grey',font=30)
@@ -101,6 +166,12 @@ def button_click():
 
         textField = Entry(new_frame, bg='white')
         textField.pack(pady=(0,5))
+        
+        new_title1 = Label(new_frame, text='Enter your text fo name',bg='grey',font=30)
+        new_title1.pack(pady=(5,5))
+
+        textField1 = Entry(new_frame, bg='white')
+        textField1.pack(pady=(0,5))
 
         press_me_new1 = Button(new_frame, text = 'text to speech', bg='grey',command=button_click_text_to_speech)
         press_me_new1.pack()
