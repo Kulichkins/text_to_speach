@@ -65,17 +65,53 @@ def button_click():
         
         
         def button_click_audio():
-            print(your_bible.get())
+            choice = your_bible.get()
+            str_name = 'r'+str(choice)
+            try:
+                # connect to exist database
+                connection = psycopg2.connect(
+                host="127.0.0.1",
+                user="postgres",
+                password="123",
+                database="postgres"    
+                )
+                connection.autocommit = True
+    
+ 
+    
+                with connection.cursor() as cursor:
+                    sql = "SELECT preset,rate FROM Files WHERE file_name = %s"
+                    cursor.execute(sql, (choice, ))
+        
+                    row = cursor.fetchone()
+                    print(f" {row}")
+        
+    
+            except Exception as _ex:
+                print("[INFO] Error while working with PostgreSQL", _ex)
+            finally:
+                if connection:
+                # cursor.close()
+                    connection.close()
+                    print("[INFO] PostgreSQL connection closed")
+            
+            audio_data = row[0]
+            print(audio_data)
+            audio_array = np.frombuffer(audio_data, dtype=np.int32)
+            audio_array = audio_array/100000000
+            print(audio_array)
+            print(len(audio_array))
+            scipy.io.wavfile.write('wonder.wav', row[1], audio_array)
         
         
         
         def button_click_text_to_speech(temp_fk_id = login):
             text_for_using = str(textField.get())
-            text_for_name = str(textField1.get())
+            text_for_name = str(textField1.get())+'.wav'
             fk_id = temp_fk_id
             print(fk_id)
             
-            model = BarkModel.from_pretrained('suno/bark')
+            '''model = BarkModel.from_pretrained('suno/bark')
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
             model = model.to(device)
             processor = AutoProcessor.from_pretrained('suno/bark')
@@ -84,22 +120,44 @@ def button_click():
                 
 
             inputs = processor(text_for_using, voice_preset = 'v2/ru_speaker_3').to(device)
-            audio_array = model.generate(**inputs)
-            audio_array = audio_array.cpu().numpy().squeeze()
-
+            audio_array2 = model.generate(**inputs)
+            audio_array2 = audio_array2.cpu().numpy().squeeze()
+            print(audio_array2)
+            print(len(audio_array2))
 
             sample_rate = model.generation_config.sample_rate
-            scipy.io.wavfile.write(text_for_name,rate = sample_rate,data=audio_array)
+            scipy.io.wavfile.write(text_for_name,rate = sample_rate,data=audio_array2)
+            print('ffffffffffffffffffffffffffff')'''
             
             
             
-            rate, audio_array = scipy.io.wavfile.read(text_for_name)
+            rate, audio_array = scipy.io.wavfile.read('test6.wav')
+            print(type(audio_array))
+            print(audio_array.dtype)
+            print(len(audio_array))
+            scipy.io.wavfile.write('восстановленный_файл.wav', rate=rate, data=audio_array)
+
+            
 
             # Преобразование аудиофайла в тип bytea
-            audio_data = np.array(audio_array, dtype=np.int16).tobytes()
+            audio_data = audio_array*100000000000000
+            print('file base:', audio_data)
+            print('file not base:', audio_data.astype(np.int64))
+            audio_data = audio_data.astype(np.int64).tobytes()
+            print(len(audio_data))
+            audio_array = np.frombuffer(audio_data, dtype=np.int64)
+            audio_array = audio_array/100000000000000
+            audio_array = audio_array.astype(np.float32)
+            print(audio_array)
+            print(len(audio_array))
+            print(type(audio_array))
+            print(audio_array.dtype)
+            scipy.io.wavfile.write('восстановленный_файл1.wav', rate=rate, data=audio_array)
+            
+           
 
 
-            try:
+            '''try:
                 # connect to exist database
                 connection = psycopg2.connect(
                 host="127.0.0.1",
@@ -116,8 +174,8 @@ def button_click():
                     cursor.execute(insert_query1, (fk_id,))
                     output = cursor.fetchone()
 
-                    insert_query = "INSERT INTO files (file_name, preset, fk_user_id) VALUES (%s, %s, %s)"
-                    cursor.execute(insert_query, (text_for_name, audio_data, output[0]))
+                    insert_query = "INSERT INTO files (file_name, preset, fk_user_id,rate) VALUES (%s, %s, %s, %s)"
+                    cursor.execute(insert_query, (text_for_name, audio_data, output[0], rate))
 
                     output = cursor.fetchone()
                     print(f" {output}")
@@ -127,7 +185,7 @@ def button_click():
                 if connection:
                 # cursor.close()
                     connection.close()
-                    print("[INFO] PostgreSQL connection closed")
+                    print("[INFO] PostgreSQL connection closed")'''
 
         
         
@@ -144,14 +202,46 @@ def button_click():
         new_frame=Frame(new_window, bg='red')
         new_frame.place(relx=0.15, rely=0.15, relwidth=0.7,relheight=0.7)
 
-        your_voice = [
-            'gggg',
-            'ddd',
-            'fff'
-        ]
+        try:
+            # connect to exist database
+            connection = psycopg2.connect(
+            host="127.0.0.1",
+            user="postgres",
+            password="123",
+            database="postgres"    
+            )
+            connection.autocommit = True
+    
+ 
+    
+            with connection.cursor() as cursor:
+                insert_query1 = "select id from Users where login = %s"
+                cursor.execute(insert_query1, (login,))
+                output = cursor.fetchone()
+
+
+
+                sql = "select * from Files where fk_user_id = %s"
+                cursor.execute(sql, (output[0],))
+        
+                masss = cursor.fetchall()
+                
+        
+    
+        except Exception as _ex:
+            print("[INFO] Error while working with PostgreSQL", _ex)
+        finally:
+            if connection:
+            # cursor.close()
+                connection.close()
+                print("[INFO] PostgreSQL connection closed")
+        your_presset=[]
+        for i in range(len(masss)):
+            your_presset.append(masss[i][3])
+        
 
         selected_option = StringVar()
-        your_bible = ttk.Combobox(new_frame, textvariable=selected_option, values=your_voice, state='readonly')
+        your_bible = ttk.Combobox(new_frame, textvariable=selected_option, values=your_presset, state='readonly')
         your_bible.pack(pady=(20,0))
 
 
