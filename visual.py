@@ -97,11 +97,14 @@ def button_click():
             
             audio_data = row[0]
             print(audio_data)
-            audio_array = np.frombuffer(audio_data, dtype=np.int32)
-            audio_array = audio_array/100000000
+            audio_array = np.frombuffer(audio_data, dtype=np.int64)
+            audio_array = audio_array/100000000000000
+            audio_array = audio_array.astype(np.float32)
             print(audio_array)
             print(len(audio_array))
-            scipy.io.wavfile.write('wonder.wav', row[1], audio_array)
+            print(type(audio_array))
+            print(audio_array.dtype)
+            scipy.io.wavfile.write('восстановленный_файл1.wav', rate=row[1], data=audio_array)
         
         
         
@@ -111,7 +114,7 @@ def button_click():
             fk_id = temp_fk_id
             print(fk_id)
             
-            '''model = BarkModel.from_pretrained('suno/bark')
+            model = BarkModel.from_pretrained('suno/bark')
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
             model = model.to(device)
             processor = AutoProcessor.from_pretrained('suno/bark')
@@ -127,15 +130,15 @@ def button_click():
 
             sample_rate = model.generation_config.sample_rate
             scipy.io.wavfile.write(text_for_name,rate = sample_rate,data=audio_array2)
-            print('ffffffffffffffffffffffffffff')'''
+            print('ffffffffffffffffffffffffffff')
             
             
             
-            rate, audio_array = scipy.io.wavfile.read('test6.wav')
+            rate, audio_array = scipy.io.wavfile.read(text_for_name)
             print(type(audio_array))
             print(audio_array.dtype)
             print(len(audio_array))
-            scipy.io.wavfile.write('восстановленный_файл.wav', rate=rate, data=audio_array)
+            
 
             
 
@@ -145,19 +148,20 @@ def button_click():
             print('file not base:', audio_data.astype(np.int64))
             audio_data = audio_data.astype(np.int64).tobytes()
             print(len(audio_data))
-            audio_array = np.frombuffer(audio_data, dtype=np.int64)
+            
+            '''audio_array = np.frombuffer(audio_data, dtype=np.int64)
             audio_array = audio_array/100000000000000
             audio_array = audio_array.astype(np.float32)
             print(audio_array)
             print(len(audio_array))
             print(type(audio_array))
             print(audio_array.dtype)
-            scipy.io.wavfile.write('восстановленный_файл1.wav', rate=rate, data=audio_array)
+            scipy.io.wavfile.write('восстановленный_файл1.wav', rate=rate, data=audio_array)'''
             
            
 
 
-            '''try:
+            try:
                 # connect to exist database
                 connection = psycopg2.connect(
                 host="127.0.0.1",
@@ -185,7 +189,7 @@ def button_click():
                 if connection:
                 # cursor.close()
                     connection.close()
-                    print("[INFO] PostgreSQL connection closed")'''
+                    print("[INFO] PostgreSQL connection closed")
 
         
         
