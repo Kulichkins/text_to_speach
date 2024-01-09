@@ -1,31 +1,196 @@
 from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
+import psycopg2
+import numpy as np
+
+
+from transformers import BarkModel, AutoProcessor
+import torch
+import scipy
+
+
+
 
 def add_window():
     window = Tk()
     window['bg'] = '#fafafa'
     window.title('text-to-speech')
-    window.geometry('300x250')
+    window.geometry('300x500')
     window.resizable(width=FALSE,height=FALSE)
     return(window)
 
 def button_click():
     login = loginInput.get()
     passwd = passField.get()
-    if login != '' and passwd != '': 
+
+    try:
+        # connect to exist database
+        connection = psycopg2.connect(
+        host="127.0.0.1",
+        user="postgres",
+        password="123",
+        database="postgres"    
+        )
+        connection.autocommit = True
+    
+ 
+    
+        with connection.cursor() as cursor:
+            sql = "select True from Users where (login = %s)and(password = %s)"
+            cursor.execute(sql, (login, passwd))
+        
+            output = cursor.fetchone()
+            print(f" {output}")
+        
+    
+    except Exception as _ex:
+        print("[INFO] Error while working with PostgreSQL", _ex)
+    finally:
+        if connection:
+         # cursor.close()
+            connection.close()
+            print("[INFO] PostgreSQL connection closed")
+
+
+
+    if output==None:
+        messagebox.showerror(title='autentic error',message='you fucking stpd beatch')
+
+
+    elif login != '' and passwd != '' and output[0]==True: 
         
         
         
         
         
         def button_click_audio():
-            print(your_bible.get())
+            choice = your_bible.get()
+            str_name = 'r'+str(choice)
+            try:
+                # connect to exist database
+                connection = psycopg2.connect(
+                host="127.0.0.1",
+                user="postgres",
+                password="123",
+                database="postgres"    
+                )
+                connection.autocommit = True
+    
+ 
+    
+                with connection.cursor() as cursor:
+                    sql = "SELECT preset,rate FROM Files WHERE file_name = %s"
+                    cursor.execute(sql, (choice, ))
+        
+                    row = cursor.fetchone()
+                    print(f" {row}")
+        
+    
+            except Exception as _ex:
+                print("[INFO] Error while working with PostgreSQL", _ex)
+            finally:
+                if connection:
+                # cursor.close()
+                    connection.close()
+                    print("[INFO] PostgreSQL connection closed")
+            
+            audio_data = row[0]
+            print(audio_data)
+            audio_array = np.frombuffer(audio_data, dtype=np.int64)
+            audio_array = audio_array/100000000000000
+            audio_array = audio_array.astype(np.float32)
+            print(audio_array)
+            print(len(audio_array))
+            print(type(audio_array))
+            print(audio_array.dtype)
+            scipy.io.wavfile.write('восстановленный_файл1.wav', rate=row[1], data=audio_array)
         
         
         
-        def button_click_text_to_speech():
-            print('its ok')
+        def button_click_text_to_speech(temp_fk_id = login):
+            text_for_using = str(textField.get())
+            text_for_name = str(textField1.get())+'.wav'
+            fk_id = temp_fk_id
+            print(fk_id)
+            
+            model = BarkModel.from_pretrained('suno/bark')
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            model = model.to(device)
+            processor = AutoProcessor.from_pretrained('suno/bark')
+
+
+                
+
+            inputs = processor(text_for_using, voice_preset = 'v2/ru_speaker_3').to(device)
+            audio_array2 = model.generate(**inputs)
+            audio_array2 = audio_array2.cpu().numpy().squeeze()
+            print(audio_array2)
+            print(len(audio_array2))
+
+            sample_rate = model.generation_config.sample_rate
+            scipy.io.wavfile.write(text_for_name,rate = sample_rate,data=audio_array2)
+            print('ffffffffffffffffffffffffffff')
+            
+            
+            
+            rate, audio_array = scipy.io.wavfile.read(text_for_name)
+            print(type(audio_array))
+            print(audio_array.dtype)
+            print(len(audio_array))
+            
+
+            
+
+            # Преобразование аудиофайла в тип bytea
+            audio_data = audio_array*100000000000000
+            print('file base:', audio_data)
+            print('file not base:', audio_data.astype(np.int64))
+            audio_data = audio_data.astype(np.int64).tobytes()
+            print(len(audio_data))
+            
+            '''audio_array = np.frombuffer(audio_data, dtype=np.int64)
+            audio_array = audio_array/100000000000000
+            audio_array = audio_array.astype(np.float32)
+            print(audio_array)
+            print(len(audio_array))
+            print(type(audio_array))
+            print(audio_array.dtype)
+            scipy.io.wavfile.write('восстановленный_файл1.wav', rate=rate, data=audio_array)'''
+            
+           
+
+
+            try:
+                # connect to exist database
+                connection = psycopg2.connect(
+                host="127.0.0.1",
+                user="postgres",
+                password="123",
+                database="postgres"    
+                )
+                connection.autocommit = True
+    
+ 
+    
+                with connection.cursor() as cursor:
+                    insert_query1 = "select id from Users where login = %s"
+                    cursor.execute(insert_query1, (fk_id,))
+                    output = cursor.fetchone()
+
+                    insert_query = "INSERT INTO files (file_name, preset, fk_user_id,rate) VALUES (%s, %s, %s, %s)"
+                    cursor.execute(insert_query, (text_for_name, audio_data, output[0], rate))
+
+                    output = cursor.fetchone()
+                    print(f" {output}")
+            except Exception as _ex:
+                print("[INFO] Error while working with PostgreSQL", _ex)
+            finally:
+                if connection:
+                # cursor.close()
+                    connection.close()
+                    print("[INFO] PostgreSQL connection closed")
+
         
         
         
@@ -41,20 +206,53 @@ def button_click():
         new_frame=Frame(new_window, bg='red')
         new_frame.place(relx=0.15, rely=0.15, relwidth=0.7,relheight=0.7)
 
-        your_voice = [
-            'gggg',
-            'ddd',
-            'fff'
-        ]
+        try:
+            # connect to exist database
+            connection = psycopg2.connect(
+            host="127.0.0.1",
+            user="postgres",
+            password="123",
+            database="postgres"    
+            )
+            connection.autocommit = True
+    
+ 
+    
+            with connection.cursor() as cursor:
+                insert_query1 = "select id from Users where login = %s"
+                cursor.execute(insert_query1, (login,))
+                output = cursor.fetchone()
+
+
+
+                sql = "select * from Files where fk_user_id = %s"
+                cursor.execute(sql, (output[0],))
+        
+                masss = cursor.fetchall()
+                
+        
+    
+        except Exception as _ex:
+            print("[INFO] Error while working with PostgreSQL", _ex)
+        finally:
+            if connection:
+            # cursor.close()
+                connection.close()
+                print("[INFO] PostgreSQL connection closed")
+        your_presset=[]
+        for i in range(len(masss)):
+            your_presset.append(masss[i][3])
+        
 
         selected_option = StringVar()
-        your_bible = ttk.Combobox(new_frame, textvariable=selected_option, values=your_voice, state='readonly')
+        your_bible = ttk.Combobox(new_frame, textvariable=selected_option, values=your_presset, state='readonly')
         your_bible.pack(pady=(20,0))
 
 
         press_me_new = Button(new_frame, text = 'select', bg='grey',command=button_click_audio)
         press_me_new.pack(pady=5)
-        
+
+
 
 
         new_title = Label(new_frame, text='Enter your text',bg='grey',font=30)
@@ -62,6 +260,12 @@ def button_click():
 
         textField = Entry(new_frame, bg='white')
         textField.pack(pady=(0,5))
+        
+        new_title1 = Label(new_frame, text='Enter your text fo name',bg='grey',font=30)
+        new_title1.pack(pady=(5,5))
+
+        textField1 = Entry(new_frame, bg='white')
+        textField1.pack(pady=(0,5))
 
         press_me_new1 = Button(new_frame, text = 'text to speech', bg='grey',command=button_click_text_to_speech)
         press_me_new1.pack()
@@ -75,6 +279,127 @@ def button_click():
     else:
         messagebox.showerror(title='sukablyat',message='you fucking stpd beatch')
 
+
+
+
+
+def regist_click():
+    
+    
+    def button_click_regist():
+
+        login = loginInput1.get()
+        passwd = passField1.get()
+
+        try:
+            # connect to exist database
+            connection = psycopg2.connect(
+            host="127.0.0.1",
+            user="postgres",
+            password="123",
+            database="postgres"    
+            )
+            connection.autocommit = True
+    
+ 
+    
+            with connection.cursor() as cursor:
+                sql = "INSERT INTO Users(login, password) VALUES (%s, %s); SELECT True FROM Users where login = %s"
+                cursor.execute(sql, (login, passwd, login))
+
+                output = cursor.fetchone()
+                print(f" {output}")
+        except Exception as _ex:
+            print("[INFO] Error while working with PostgreSQL", _ex)
+        finally:
+            if connection:
+            # cursor.close()
+                connection.close()
+                print("[INFO] PostgreSQL connection closed")
+
+        if output[0]==True:
+
+
+            def button_click_audior():
+                print(your_bibler.get())
+        
+        
+        
+            def button_click_text_to_speechr():
+                print('its ok')
+
+
+
+
+            new_window1.destroy()
+            new_windowr = add_window()
+        
+            new_canvasr=Canvas(new_windowr, height=300, width=250)
+            new_canvasr.pack
+
+
+            new_framer=Frame(new_windowr, bg='red')
+            new_framer.place(relx=0.15, rely=0.15, relwidth=0.7,relheight=0.7)
+
+            your_voice = [
+                'gggg',
+                'ddd',
+                'fff'
+            ]
+
+            selected_option = StringVar()
+            your_bibler = ttk.Combobox(new_framer, textvariable=selected_option, values=your_voice, state='readonly')
+            your_bibler.pack(pady=(20,0))
+
+
+            press_me_newr = Button(new_framer, text = 'select', bg='grey',command=button_click_audior)
+            press_me_newr.pack(pady=5)
+        
+
+
+            new_titler = Label(new_framer, text='Enter your text',bg='grey',font=30)
+            new_titler.pack(pady=(5,5))
+
+            textFieldr = Entry(new_framer, bg='white')
+            textFieldr.pack(pady=(0,5))
+
+            press_me_new1r = Button(new_framer, text = 'text to speech', bg='grey',command=button_click_text_to_speechr)
+            press_me_new1r.pack()
+
+
+
+
+
+            new_windowr.mainloop()
+    
+    
+    
+    
+    
+    window1.destroy()
+    new_window1 = add_window()
+        
+    new_canvas1=Canvas(new_window1, height=300, width=250)
+    new_canvas1.pack
+
+
+    new_frame1=Frame(new_window1, bg='red')
+    new_frame1.place(relx=0.15, rely=0.15, relwidth=0.7,relheight=0.7)
+    title1 = Label(new_frame1, text='Enter your login',bg='grey',font=40)
+    title1.pack(pady=(30,5))
+
+    loginInput1 = Entry(new_frame1,bg = 'white')
+    loginInput1.pack()
+
+    title1 = Label(new_frame1, text='Enter your password',bg='grey',font=40)
+    title1.pack(pady=(10,5))
+
+    passField1 = Entry(new_frame1, bg='white', show='*')
+    passField1.pack(pady=(0,2))
+
+
+    press_me1 = Button(new_frame1, text = 'confirm', bg='grey',command=button_click_regist)
+    press_me1.pack()
 
 
 
@@ -113,8 +438,9 @@ passField.pack(pady=(0,2))
 
 
 press_me = Button(frame, text = 'confirm', bg='grey',command=button_click)
-press_me.pack()
+press_me.pack(side=LEFT,padx=10)
 
-
+press_me = Button(frame, text = 'registration', bg='grey',command=regist_click)
+press_me.pack(side=LEFT,padx=10)
 
 window1.mainloop()
