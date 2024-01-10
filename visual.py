@@ -23,6 +23,7 @@ def add_window():
 def button_click():
     login = loginInput.get()
     passwd = passField.get()
+    
 
     try:
         # connect to exist database
@@ -55,7 +56,7 @@ def button_click():
 
 
     if output==None:
-        messagebox.showerror(title='autentic error',message='you fucking stpd beatch')
+        messagebox.showerror(title='autentic error',message='you write something wrong or please reg')
 
 
     elif login != '' and passwd != '' and output[0]==True: 
@@ -66,6 +67,8 @@ def button_click():
         
         def button_click_audio():
             choice = your_bible.get()
+            if choice == '':
+                return(messagebox.showerror(title='Warning',message='fild shoud not be empty'))
             str_name = 'r'+str(choice)
             try:
                 # connect to exist database
@@ -112,6 +115,11 @@ def button_click():
             preset = your_bibler_presset.get()
             text_for_using = str(textField.get())
             text_for_name = str(textField1.get())+'.wav'
+            text_for_name_temp = str(textField1.get())
+            if (preset == '') or (text_for_name_temp == '') or (text_for_using == ''):
+                return(messagebox.showerror(title='Warning',message='fild shoud not be empty'))
+            
+
             fk_id = temp_fk_id
             print(fk_id)
             
@@ -297,7 +305,8 @@ def button_click():
 
         choice_your_voice = ['v2/ru_speaker_1','v2/ru_speaker_2','v2/ru_speaker_3','v2/ru_speaker_5','v2/ru_speaker_6']
 
-        your_bibler_presset = ttk.Combobox(new_frame, textvariable=selected_option, values=choice_your_voice, state='readonly')
+        selected_option2 = StringVar()
+        your_bibler_presset = ttk.Combobox(new_frame, textvariable=selected_option2, values=choice_your_voice, state='readonly')
         your_bibler_presset.pack(pady=(10,0))
 
         new_title = Label(new_frame, text='Enter your text',bg='grey',font=30)
@@ -322,7 +331,7 @@ def button_click():
         new_window.mainloop()
         
     else:
-        messagebox.showerror(title='sukablyat',message='you fucking stpd beatch')
+        messagebox.showerror(title='sukablyat',message='This login is not available')
 
 
 
@@ -332,9 +341,11 @@ def regist_click():
     
     
     def button_click_regist():
-
+        temp_output = [False,True]
         login = loginInput1.get()
         passwd = passField1.get()
+        if (login == '') or (passwd == ''):
+            return(messagebox.showerror(title='Warning',message='filds shoud not be empty'))
 
         try:
             # connect to exist database
@@ -349,6 +360,11 @@ def regist_click():
  
     
             with connection.cursor() as cursor:
+                sql = "SELECT True FROM Users where login = %s"
+                cursor.execute(sql, (login, ))
+                output1 = cursor.fetchone()
+                if output1 == None:
+                    output1 = temp_output
                 sql = "INSERT INTO Users(login, password) VALUES (%s, %s); SELECT True FROM Users where login = %s"
                 cursor.execute(sql, (login, passwd, login))
 
@@ -361,133 +377,147 @@ def regist_click():
             # cursor.close()
                 connection.close()
                 print("[INFO] PostgreSQL connection closed")
+        print(output1)
 
-        if output[0]==True:
+
+        if output1[0]==True:
+            messagebox.showerror(title='Warning',message='This login is not available')
+            
+
+        elif output[0]==True:
 
 
             def button_click_audior():
                 choice = your_bibler.get()
                 
-                str_name = 'r'+str(choice)
-                try:
-                    # connect to exist database
-                    connection = psycopg2.connect(
-                    host="127.0.0.1",
-                    user="postgres",
-                    password="123",
-                    database="postgres"    
-                    )
-                    connection.autocommit = True
+
+                if choice!='':
+                    str_name = 'r'+str(choice)
+                    try:
+                        # connect to exist database
+                        connection = psycopg2.connect(
+                        host="127.0.0.1",
+                        user="postgres",
+                        password="123",
+                        database="postgres"    
+                        )
+                        connection.autocommit = True
     
  
     
-                    with connection.cursor() as cursor:
-                        sql = "SELECT preset,rate FROM Files WHERE file_name = %s"
-                        cursor.execute(sql, (choice, ))
+                        with connection.cursor() as cursor:
+                            sql = "SELECT preset,rate FROM Files WHERE file_name = %s"
+                            cursor.execute(sql, (choice, ))
         
-                        row = cursor.fetchone()
-                        print(f" {row}")
+                            row = cursor.fetchone()
+                            print(f" {row}")
         
     
-                except Exception as _ex:
-                    print("[INFO] Error while working with PostgreSQL", _ex)
-                finally:
-                    if connection:
-                    # cursor.close()
-                        connection.close()
-                        print("[INFO] PostgreSQL connection closed")
+                    except Exception as _ex:
+                        print("[INFO] Error while working with PostgreSQL", _ex)
+                    finally:
+                        if connection:
+                        # cursor.close()
+                            connection.close()
+                            print("[INFO] PostgreSQL connection closed")
             
-                audio_data = row[0]
-                print(audio_data)
-                audio_array = np.frombuffer(audio_data, dtype=np.int64)
-                audio_array = audio_array/100000000000000
-                audio_array = audio_array.astype(np.float32)
-                print(audio_array)
-                print(len(audio_array))
-                print(type(audio_array))
-                print(audio_array.dtype)
-                scipy.io.wavfile.write(str_name, rate=row[1], data=audio_array)
+                    audio_data = row[0]
+                    print(audio_data)
+                    audio_array = np.frombuffer(audio_data, dtype=np.int64)
+                    audio_array = audio_array/100000000000000
+                    audio_array = audio_array.astype(np.float32)
+                    print(audio_array)
+                    print(len(audio_array))
+                    print(type(audio_array))
+                    print(audio_array.dtype)
+                    scipy.io.wavfile.write(str_name, rate=row[1], data=audio_array)
+                else:
+                    messagebox.showerror(title='Warning',message='filds shoud not be empty')
         
         
         
             def button_click_text_to_speechr(temp_fk_id = login):
                 text_for_using = str(textFieldr.get())
                 text_for_name = str(textFieldr1.get())+'.wav'
+                text_for_name_temp = str(textFieldr1.get())
                 preset = your_bibler_presset.get()
-                fk_id = temp_fk_id
-                print(fk_id)
+                if (text_for_using != '') and (text_for_name_temp != '') and (preset != ''):
+                    fk_id = temp_fk_id
+                    print(fk_id)
             
-                model = BarkModel.from_pretrained('suno/bark')
-                device = 'cuda' if torch.cuda.is_available() else 'cpu'
-                model = model.to(device)
-                processor = AutoProcessor.from_pretrained('suno/bark')
+                    model = BarkModel.from_pretrained('suno/bark')
+                    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+                    model = model.to(device)
+                    processor = AutoProcessor.from_pretrained('suno/bark')
 
 
                 
 
-                inputs = processor(text_for_using, voice_preset = preset).to(device)
-                audio_array2 = model.generate(**inputs)
-                audio_array2 = audio_array2.cpu().numpy().squeeze()
-                print(audio_array2)
-                print(len(audio_array2))
+                    inputs = processor(text_for_using, voice_preset = preset).to(device)
+                    audio_array2 = model.generate(**inputs)
+                    audio_array2 = audio_array2.cpu().numpy().squeeze()
+                    print(audio_array2)
+                    print(len(audio_array2))
 
-                sample_rate = model.generation_config.sample_rate
-                scipy.io.wavfile.write(text_for_name,rate = sample_rate,data=audio_array2)
-                print('ffffffffffffffffffffffffffff')
+                    sample_rate = model.generation_config.sample_rate
+                    scipy.io.wavfile.write(text_for_name,rate = sample_rate,data=audio_array2)
+                    print('ffffffffffffffffffffffffffff')
             
             
             
-                rate, audio_array = scipy.io.wavfile.read(text_for_name)
-                print(type(audio_array))
-                print(audio_array.dtype)
-                print(len(audio_array))
-            
-
+                    rate, audio_array = scipy.io.wavfile.read(text_for_name)
+                    print(type(audio_array))
+                    print(audio_array.dtype)
+                    print(len(audio_array))
             
 
-                # Преобразование аудиофайла в тип bytea
-                audio_data = audio_array*100000000000000
-                print('file base:', audio_data)
-                print('file not base:', audio_data.astype(np.int64))
-                audio_data = audio_data.astype(np.int64).tobytes()
-                print(len(audio_data))
+            
+
+                    # Преобразование аудиофайла в тип bytea
+                    audio_data = audio_array*100000000000000
+                    print('file base:', audio_data)
+                    print('file not base:', audio_data.astype(np.int64))
+                    audio_data = audio_data.astype(np.int64).tobytes()
+                    print(len(audio_data))
             
                 
             
            
 
 
-                try:
-                    # connect to exist database
-                    connection = psycopg2.connect(
-                    host="127.0.0.1",
-                    user="postgres",
-                    password="123",
-                    database="postgres"    
-                    )
-                    connection.autocommit = True
+                    try:
+                        # connect to exist database
+                        connection = psycopg2.connect(
+                        host="127.0.0.1",
+                        user="postgres",
+                        password="123",
+                        database="postgres"    
+                        )
+                        connection.autocommit = True
     
  
     
-                    with connection.cursor() as cursor:
-                        insert_query1 = "select id from Users where login = %s"
-                        cursor.execute(insert_query1, (fk_id,))
-                        output = cursor.fetchone()
+                        with connection.cursor() as cursor:
+                            insert_query1 = "select id from Users where login = %s"
+                            cursor.execute(insert_query1, (fk_id,))
+                            output = cursor.fetchone()
 
-                        insert_query = "INSERT INTO files (file_name, preset, fk_user_id,rate) VALUES (%s, %s, %s, %s)"
-                        cursor.execute(insert_query, (text_for_name, audio_data, output[0], rate))
+                            insert_query = "INSERT INTO files (file_name, preset, fk_user_id,rate) VALUES (%s, %s, %s, %s)"
+                            cursor.execute(insert_query, (text_for_name, audio_data, output[0], rate))
 
-                        output = cursor.fetchone()
-                        print(f" {output}")
+                            output = cursor.fetchone()
+                            print(f" {output}")
 
-                except Exception as _ex:
-                    print("[INFO] Error while working with PostgreSQL", _ex)
+                    except Exception as _ex:
+                        print("[INFO] Error while working with PostgreSQL", _ex)
 
-                finally:
-                    if connection:
-                    # cursor.close()
-                        connection.close()
-                        print("[INFO] PostgreSQL connection closed")
+                    finally:
+                        if connection:
+                        # cursor.close()
+                            connection.close()
+                            print("[INFO] PostgreSQL connection closed")
+                else:
+                    messagebox.showerror(title='Warning',message='filds shoud not be empty')
 
 
 
@@ -624,6 +654,7 @@ def regist_click():
 
 
             new_windowr.mainloop()
+        
     
     
     
