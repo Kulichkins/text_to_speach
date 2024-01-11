@@ -1,0 +1,23 @@
+create or replace function user_check_login()
+returns trigger as
+$$
+begin
+if exists(select 1 from Users where login = new.login) then
+	raise exception 'User already here';
+	new.login = null;
+	new.password = null;
+	return new;
+else
+	return new;
+end if;
+end;
+$$
+language plpgsql;
+
+
+
+create or replace trigger user_check_login
+before insert
+on Users
+for each row
+execute procedure user_check_login();

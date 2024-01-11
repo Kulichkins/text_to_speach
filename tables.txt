@@ -1,0 +1,10 @@
+create table User(
+	id serial PRIMARY KEY,
+	login varchar(50) NOT NULL,
+	password varchar(50) NOT NULL
+);
+create table Files(
+	id serial PRIMARY KEY,
+	preset bytea,
+	fk_user_id int REFERENCES Users(id)
+);
