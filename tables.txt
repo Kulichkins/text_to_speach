@@ -6,5 +6,7 @@ create table Users(
 create table Files(
 	id serial PRIMARY KEY,
 	preset bytea,
-	fk_user_id int REFERENCES Users(id)
+	fk_user_id int REFERENCES Users(id),
+	file_name varchar(50),
+	rate integer
 );
